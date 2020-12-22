@@ -1,5 +1,5 @@
 
-#include "sqlite3.c"
+#include "sqleet.c" // in place of sqlite3.c
 
 #include "cencode.c"
 

@@ -4,5 +4,6 @@
 obj
 lib
 libs
-sqlite-native-driver.jar
+sqlite-*.jar
 *.zip
+sqleet-*

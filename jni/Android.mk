@@ -11,7 +11,9 @@ LOCAL_LDLIBS := -llog
 
 LOCAL_MODULE    := sqlc-evplus-native-driver
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/../sqlite-amalgamation
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../sqleet-amalgamation
+
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../native # needed to include proxy sqlite3.h
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../sqlite3-regexp-cached
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libb64-encode
