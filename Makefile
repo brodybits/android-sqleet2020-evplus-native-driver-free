@@ -1,3 +1,4 @@
+OUTPUT_JAR := sqleet2020-evplus-native-driver.jar
 
 SQLEET_TAG := v0.31.1
 
@@ -29,7 +30,7 @@ ndkbuild:
 	rm -rf lib libs *.jar
 	ndk-build
 	cp -r libs lib
-	jar cf sqleet2020-evplus-native-driver.jar lib
+	jar cf $(OUTPUT_JAR) lib
 
 clean:
 	rm -rf obj lib libs *.jar *.zip *.jar
