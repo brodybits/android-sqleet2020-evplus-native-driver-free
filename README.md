@@ -1,4 +1,4 @@
-# android-sqleet2020-evplus-native-driver-free build (with evplus-ext user defined functions)
+# android-sqleet2020-evplus-ndk-driver-free build (with evplus-ext user defined functions)
 
 Provides a native build of SQLeet (<https://github.com/resilar/sqleet>) with an optimized JSON-based data interface and a workaround for large SELECT results, with a low-level API for Cordova SQLite evplus plugin versions.
 
@@ -14,7 +14,7 @@ License: GPL v3 (<https://www.gnu.org/licenses/gpl-3.0.txt>) or commercial licen
 
 ## About
 
-Android-sqlite-evplus-ext-native-driver-free provides:
+provides:
 - single `EVPlusNativeDriver` class with native Java interface to the needed C functions
 - automatic build for major _supported_ Android targets (~~`armeabi`,~~ `armeabi-v7a`, `x86`, `x86_64`, `arm64-v8a`) that is accessible from the native Java interface, with the following user defined functions:
   - `REGEXP` integrated from [brodybits / sqlite3-regexp-cached](https://github.com/brodybits/sqlite3-regexp-cached) (based on <http://git.altlinux.org/people/at/packages/?p=sqlite3-pcre.git> by Alexey Tourbin, public domain)
