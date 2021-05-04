@@ -1,4 +1,4 @@
-OUTPUT_JAR := sqleet2020-evplus-native-driver.jar
+OUTPUT_JAR := sqleet2020-evplus-ndk-driver.jar
 
 SQLEET_TAG := v0.31.1
 
