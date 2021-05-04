@@ -11,7 +11,7 @@
 
 #include "sqlite3_base64.h"
 
-#define BASE_HANDLE_OFFSET 0x100000000LL
+#define BASE_HANDLE_OFFSET 0 /* (no conversion offset) */
 
 #ifdef SQLC_KEEP_ANDROID_LOG
 // ref: http://www.ibm.com/developerworks/opensource/tutorials/os-androidndk/index.html
@@ -23,33 +23,79 @@
 #define HANDLE_FROM_VP(p) ( BASE_HANDLE_OFFSET + ( (unsigned char *)(p) - (unsigned char *)NULL ) )
 #define HANDLE_TO_VP(h) (void *)( (unsigned char *)NULL + (ptrdiff_t)((h) - BASE_HANDLE_OFFSET) )
 
-sqlc_handle_t sqlc_evplus_db_open(int sqlc_evplus_api_version, const char * filename, int flags)
+struct dboc_s {
+  int result;
+};
+
+sqlc_handle_t sqlc_new_ev_dboc()
 {
+  struct dboc_s * mydboc;
+
+  mydboc = malloc(sizeof(struct dboc_s));
+
+  mydboc->result = 0; // SQLITE_OK
+
+  return HANDLE_FROM_VP(mydboc);
+}
+
+sqlc_handle_t sqlc_ev_db_open(sqlc_handle_t dboc, const char * filename, int flags)
+{
+  struct dboc_s * mydboc;
   sqlite3 *d1;
   int r1;
   const char * err;
 
   MYLOG("db_open %s %d", filename, flags);
 
-  if (sqlc_evplus_api_version != SQLC_EVPLUS_API_VERSION) {
-    __android_log_print(ANDROID_LOG_ERROR, "sqlc", "API MISMATCH ERROR");
-    return -SQLC_RESULT_ERROR;
+  if (dboc == SQLC_NULL_HANDLE) {
+    __android_log_print(ANDROID_LOG_ERROR, "sqlc", "INTERNAL OPEN ERROR: invalid dboc value");
+    return SQLC_NULL_HANDLE;
   }
 
-  r1 = sqlite3_open_v2(filename, &d1, flags, NULL);
+  mydboc = HANDLE_TO_VP(dboc);
+
+  mydboc->result = r1 = sqlite3_open_v2(filename, &d1, flags, NULL);
 
   MYLOG("db_open %s result %d ptr %p", filename, r1, d1);
 
-  if (r1 != 0) return -r1;
+  if (r1 != 0) return SQLC_NULL_HANDLE;
 
   sqlite3_db_config(d1, SQLITE_DBCONFIG_DEFENSIVE, 1, NULL);
 
-  // TBD IGNORE result:
+  // TBD IGNORE result of sqlite3_regexp_init for now
   sqlite3_regexp_init(d1, &err);
 
   sqlite3_base64_init(d1);
 
   return HANDLE_FROM_VP(d1);
+}
+
+int sqlc_ev_db_open_result(sqlc_handle_t dboc)
+{
+  struct dboc_s * mydboc;
+
+  if (dboc == SQLC_NULL_HANDLE) {
+    __android_log_print(ANDROID_LOG_ERROR, "sqlc", "INTERNAL ERROR: invalid dboc value");
+    return -1;
+  }
+
+  mydboc = HANDLE_TO_VP(dboc);
+
+  return mydboc->result;
+}
+
+void sqlc_ev_dboc_finalize(sqlc_handle_t dboc)
+{
+  struct dboc_s * mydboc;
+
+  if (dboc == SQLC_NULL_HANDLE) {
+    __android_log_print(ANDROID_LOG_ERROR, "sqlc", "INTERNAL ERROR: INVALID dboc handle");
+    return;
+  }
+
+  mydboc = HANDLE_TO_VP(dboc);
+
+  free(mydboc);
 }
 
 int sqlc_db_key_native_string(sqlc_handle_t db, char *key_string)
@@ -124,7 +170,7 @@ int sqlc_db_close(sqlc_handle_t db)
 {
   sqlite3 * mydb;
 
-  if (db <= 0) {
+  if (db == SQLC_NULL_HANDLE) {
     __android_log_print(ANDROID_LOG_ERROR, "sqlc", "ERROR: INVALID db handle");
     return SQLC_RESULT_ERROR;
   }
@@ -159,7 +205,7 @@ sqlc_handle_t sqlc_evplus_db_new_qc(sqlc_handle_t db)
   sqlite3 * mydb;
   struct qc_s * myqc;
 
-  if (db <= 0) {
+  if (db == SQLC_NULL_HANDLE) {
     __android_log_print(ANDROID_LOG_ERROR, "sqlc", "ERROR: INVALID db handle");
     return SQLC_RESULT_ERROR;
   }
@@ -181,7 +227,7 @@ void sqlc_evplus_qc_finalize(sqlc_handle_t qc)
 {
   struct qc_s * myqc;
 
-  if (qc <= 0) {
+  if (qc == SQLC_NULL_HANDLE) {
     __android_log_print(ANDROID_LOG_ERROR, "sqlc", "ERROR: INVALID qc handle");
     return;
   }
@@ -237,10 +283,10 @@ int sj(const char * j, int tl, char * a)
         break;
       }
     } else if (c >= 0xf0) {
-      // [WORKAROUND] - NEEDED to avoid garbage character after "?" mark
-      // on Android 6.0 and greater
-      a[ai++] = '?';
-      ti += 4;
+      a[ai++]=j[ti++];
+      a[ai++]=j[ti++];
+      a[ai++]=j[ti++];
+      a[ai++]=j[ti++];
     } else if (c >= 0xe0) {
       a[ai++]=j[ti++];
       a[ai++]=j[ti++];
@@ -284,8 +330,8 @@ const char * ee(sqlc_handle_t qc, const char * batch_json, int ignored)
   int param_count = 0;
   int bi = 0;
 
-  const FIRST_ALLOC = 10000;
-  const NEXT_ALLOC = 80; // (extra padding)
+  const int FIRST_ALLOC = 10000;
+  const int NEXT_ALLOC = 80; // (extra padding)
 
   char * rr;
   int rrlen = 0;
@@ -294,7 +340,7 @@ const char * ee(sqlc_handle_t qc, const char * batch_json, int ignored)
   const char * pptext = 0;
   int pplen = 0;
 
-  if (qc <= 0) {
+  if (qc == SQLC_NULL_HANDLE) {
     __android_log_print(ANDROID_LOG_ERROR, "sqlc", "ERROR: INVALID qc handle");
     return "[\"batcherror\", \"internal error\", \"extra\"]";
   }
@@ -494,7 +540,10 @@ const char * ee(sqlc_handle_t qc, const char * batch_json, int ignored)
               strcpy(rr+rrlen, "null,");
               rrlen += 5;
             } else {
-              pptext = sqlite3_column_text(s, jj);
+              // (const char *) cast is used to avoid a conversion warning as
+              // sqlite3_column_text() returns pointer to unsigned char
+              // (same thing as pointer to uint8_t)
+              pptext = (const char *)sqlite3_column_text(s, jj);
               pplen = strlen(pptext);
 
               // NOTE: add double pplen for JSON encoding
@@ -540,10 +589,10 @@ const char * ee(sqlc_handle_t qc, const char * batch_json, int ignored)
                   } else if (pc >= 32 && pc < 127) {
                     rr[rrlen++] = pptext[pi++];
                   } else if (pc >= 0xf0) {
-                    // TBD WORKAROUND SOLUTION to avoid crash
-                    // in case of 4-byte UTF-8 character issue:
-                    rr[rrlen++] = '?';
-                    pi += 4;
+                    rr[rrlen++] = pptext[pi++];
+                    rr[rrlen++] = pptext[pi++];
+                    rr[rrlen++] = pptext[pi++];
+                    rr[rrlen++] = pptext[pi++];
                   } else if (pc >= 0xe0) {
                     rr[rrlen++] = pptext[pi++];
                     rr[rrlen++] = pptext[pi++];

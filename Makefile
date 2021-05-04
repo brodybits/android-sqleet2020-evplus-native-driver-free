@@ -23,16 +23,17 @@ $(SQLEET_AMALGAMATION): $(SQLEET_PATH)
 	ln -s $(SQLEET_PATH) $(SQLEET_AMALGAMATION)
 
 regen:
-	java -cp gluegentools/antlr.jar:gluegentools/gluegen.jar com.jogamp.gluegen.GlueGen -I. -Ecom.jogamp.gluegen.JavaEmitter -CEVPlusNativeDriver.cfg native/sqlc.h
-	sed -i.orig 's/^import/\/\/import/' java/io/sqlc/EVPlusNativeDriver.java
+	java -cp gluegentools/antlr.jar:gluegentools/gluegen.jar com.jogamp.gluegen.GlueGen -I. -Ecom.jogamp.gluegen.JavaEmitter -CEVNDKDriver.cfg native/sqlc.h
+	sed -i.orig 's/^import/\/\/import/' java/io/sqlc/EVNDKDriver.java
+	sed -i.orig 's/ $$//g' native/EV*.c
 
 ndkbuild:
 	rm -rf lib libs *.jar
+	javac -d .  java/io/sqlc/*.java
 	ndk-build
 	cp -r libs lib
-	jar cf $(OUTPUT_JAR) lib
+	jar cf $(OUTPUT_JAR) io lib
 
 clean:
-	rm -rf obj lib libs *.jar *.zip *.jar
+	rm -rf java/io/sqlc/*.orig native/*.orig io obj lib libs *.jar *.zip *.jar
 	rm -rf sqleet-*
-
